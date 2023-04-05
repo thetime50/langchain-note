@@ -59,7 +59,7 @@ def memoryFun():
 # promptTemplateFun()
 # chainsFun()
 # agentFun()
-memoryFun()
+# memoryFun()
 
 '''
 构建聊天模型应用
@@ -73,3 +73,25 @@ memoryFun()
 # HumanMessage 用户对话信息
 # SystemMessage 应用后台提示定制信息
 # ChatMessage ?
+
+
+def messateCompletions():
+    from langchain.chat_models import ChatOpenAI
+    from langchain.schema import (
+        AIMessage,
+        HumanMessage,
+        SystemMessage
+    )
+    chat = ChatOpenAI(temperature = 0.9)
+    print(chat([
+        HumanMessage(content="Translate this sentence from English to French. I love programming.")
+    ]) )
+    print('\n**********************\n')
+    print(chat([
+        SystemMessage(content="You are a helpful assistant that translates English to French."),
+        HumanMessage(content="Translate this sentence from English to French. I love programming."),
+        SystemMessage(content="You are a helpful assistant that translates English to French."),
+        HumanMessage(content="Translate this sentence from English to French. I love programming.")
+    ]))
+
+messateCompletions()
