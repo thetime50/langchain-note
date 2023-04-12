@@ -2,9 +2,14 @@ import os
 import json5
 
 cfg = json5.load(fp=open('../env/cfg.josn5', encoding="utf-8"))
+
 os.environ["OPENAI_API_KEY"]=cfg.get('OPENAI_API_KEY')
-# https://serpapi.com/manage-api-key
+# # https://serpapi.com/manage-api-key
 os.environ["SERPAPI_API_KEY"]=cfg.get('SERPAPI_API_KEY') 
+# https://cse.google.com/cse/create/new
+os.environ["GOOGLE_API_KEY"]=cfg.get('GOOGLE_API_KEY') 
+# https://developers.google.com/custom-search/v1/overview?hl=zh-cn
+os.environ["GOOGLE_CSE_ID"]=cfg.get('GOOGLE_CSE_ID') 
 
 '''
 构建语言模型应用
@@ -41,12 +46,32 @@ def chainsFun():
 def agentFun():
     from langchain.agents import load_tools
     from langchain.agents import initialize_agent
-    from langchain.llms import OpenAI
+    from langchain.llms import OpenAI,OpenAIChat
 
-    llm = OpenAI(temperature = 0.9)
-    tools = load_tools(['serpapi','llm-math'], llm = llm) # 'llm-match工具要用到 llm 所以需要传入
+    # llm = OpenAI(temperature = 0.9) 
+    # llm = OpenAI(temperature=0,model_name='gpt-3.5-turbo') # Could not parse LLM output: 调用不同的模型 一些格式和规则可能会不一样，会触发报错 
+    llm = OpenAIChat(temperature=0.5,model_name='gpt-3.5-turbo') # 会出现概率性的报错
+    # tools = load_tools(['serpapi','llm-math'], llm = llm) # 'llm-match工具要用到 llm 所以需要传入
+    tools = load_tools(['google-search-results-json','llm-math'], llm = llm) # 'llm-match工具要用到 llm 所以需要传入
+    
     agent = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True)
-    print( agent.run("What was the high temperature in SF yesterday in Fahrenheit? What is that number raised to the .023 power?"))
+    # print( agent.run("What was the high temperature in SF yesterday in Fahrenheit? What is that number raised to the .023 power?"))
+
+    def run_test(text,state):
+        res = agent.run(text)
+        state = state + [(text,res)]
+        return state,state
+    import gradio as gr
+    with gr.Blocks(css="#chatbot .overflow-y-auto{height:500px}") as demo:
+        chatbot = gr.Chatbot(elem_id="chatbot", label="rpa ChatGPT")
+        state = gr.State([])
+        with gr.Row():
+            with gr.Column(scale=0.7):
+                txt = gr.Textbox(show_label=False, placeholder="Enter text and press enter, or upload an image").style(
+                    container=False)
+        txt.submit(run_test, [txt, state], [chatbot, state])
+        txt.submit(lambda: "", None, txt)
+        demo.launch(server_name="127.0.0.1", server_port=7869)
 
 def memoryFun():
     from langchain import OpenAI,ConversationChain
@@ -58,7 +83,7 @@ def memoryFun():
 # llmFun()
 # promptTemplateFun()
 # chainsFun()
-# agentFun()
+agentFun()
 # memoryFun()
 
 '''
@@ -94,4 +119,4 @@ def messateCompletions():
         HumanMessage(content="Translate this sentence from English to French. I love programming.")
     ]))
 
-messateCompletions()
+# messateCompletions()
