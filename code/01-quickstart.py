@@ -43,6 +43,20 @@ def chainsFun():
     chain = LLMChain(llm = llm, prompt=prompt)
     print(chain.run('colorful socks'))
 
+import gradio as gr
+class GradioApp:
+    def __init__(self,onSubmit,server_name="127.0.0.1",server_port=7869):
+        with gr.Blocks(css="#chatbot .overflow-y-auto{height:500px}") as demo:
+            chatbot = gr.Chatbot(elem_id="chatbot", label="rpa ChatGPT")
+            state = gr.State([])
+            with gr.Row():
+                with gr.Column(scale=0.7):
+                    txt = gr.Textbox(show_label=False, placeholder="Enter text and press enter, or upload an image").style(
+                        container=False)
+            txt.submit(onSubmit, [txt, state], [chatbot, state])
+            txt.submit(lambda: "", None, txt)
+            demo.launch(server_name=server_name, server_port=server_port)
+
 def agentFun():
     from langchain.agents import load_tools
     from langchain.agents import initialize_agent
@@ -51,8 +65,8 @@ def agentFun():
     # llm = OpenAI(temperature = 0.9) 
     # llm = OpenAI(temperature=0,model_name='gpt-3.5-turbo') # Could not parse LLM output: 调用不同的模型 一些格式和规则可能会不一样，会触发报错 
     llm = OpenAIChat(temperature=0.5,model_name='gpt-3.5-turbo') # 会出现概率性的报错
-    # tools = load_tools(['serpapi','llm-math'], llm = llm) # 'llm-match工具要用到 llm 所以需要传入
-    tools = load_tools(['google-search-results-json','llm-math'], llm = llm) # 'llm-match工具要用到 llm 所以需要传入
+    tools = load_tools(['serpapi','llm-math'], llm = llm) # 'llm-match工具要用到 llm 所以需要传入
+    # tools = load_tools(['google-search-results-json','llm-math'], llm = llm) # 'llm-match工具要用到 llm 所以需要传入 莫名其妙会搜索一些东西
     
     agent = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True)
     # print( agent.run("What was the high temperature in SF yesterday in Fahrenheit? What is that number raised to the .023 power?"))
@@ -61,24 +75,22 @@ def agentFun():
         res = agent.run(text)
         state = state + [(text,res)]
         return state,state
-    import gradio as gr
-    with gr.Blocks(css="#chatbot .overflow-y-auto{height:500px}") as demo:
-        chatbot = gr.Chatbot(elem_id="chatbot", label="rpa ChatGPT")
-        state = gr.State([])
-        with gr.Row():
-            with gr.Column(scale=0.7):
-                txt = gr.Textbox(show_label=False, placeholder="Enter text and press enter, or upload an image").style(
-                    container=False)
-        txt.submit(run_test, [txt, state], [chatbot, state])
-        txt.submit(lambda: "", None, txt)
-        demo.launch(server_name="127.0.0.1", server_port=7869)
+    ga = GradioApp(run_test)
 
 def memoryFun():
     from langchain import OpenAI,ConversationChain
-    llm = OpenAI(temperature = 0.9)
+    from langchain.llms import OpenAI,OpenAIChat
+    # llm = OpenAI(temperature = 0.9)
+    llm = OpenAIChat(temperature=0,model_name='gpt-3.5-turbo')
     conversation = ConversationChain(llm = llm, verbose=True)
-    print(conversation.predict(input = 'Hi there!'))
-    print(conversation.predict(input="I'm doing well! Just having a conversation with an AI."))
+    # print(conversation.predict(input = 'Hi there!'))
+    # print(conversation.predict(input="I'm doing well! Just having a conversation with an AI."))
+
+    def run_test(text,state):
+        res = conversation.predict(input = text)
+        state = state + [(text,res)]
+        return state,state
+    ga = GradioApp(run_test)
 
 # llmFun()
 # promptTemplateFun()
